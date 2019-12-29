@@ -10,4 +10,5 @@
 # include "../libft/get_next_line.h"
 # include "./utils/vector.h"
 # include "./utils/matrix.h"
+# include "./loaders/obj_parser.h"
 #endif

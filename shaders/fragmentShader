@@ -1,5 +1,16 @@
 #version 460 core
+
+in vec3 fragmentColor;
+in vec2 uv;
+in vec2 mixColor;
+
 out vec3 color;
+uniform float mixUniform;
+
+uniform sampler2D textureSampler;
+
 void main(){
-  color = vec3(1,0,0.5);
+  vec3 texComponent = texture(textureSampler, uv).rgb;
+
+  color = mix(fragmentColor, texComponent, mixUniform);
 }

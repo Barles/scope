@@ -1,10 +1,127 @@
 #include "../includes/scope.h"
 
-static const GLfloat g_vertex_buffer_data[] = {
-	-1.0f, -1.0f, 0.0f,
-	1.0f, -1.0f, 0.0f,
-	0.0f,  1.0f, 0.0f
+static const GLfloat mix_buffer[] = {0.5f, 0.5f};
+
+static const GLfloat g_uv_buffer_data[] = {
+    0.000059f, 1.0f-0.000004f,
+    0.000103f, 1.0f-0.336048f,
+    0.335973f, 1.0f-0.335903f,
+    1.000023f, 1.0f-0.000013f,
+    0.667979f, 1.0f-0.335851f,
+    0.999958f, 1.0f-0.336064f,
+    0.667979f, 1.0f-0.335851f,
+    0.336024f, 1.0f-0.671877f,
+    0.667969f, 1.0f-0.671889f,
+    1.000023f, 1.0f-0.000013f,
+    0.668104f, 1.0f-0.000013f,
+    0.667979f, 1.0f-0.335851f,
+    0.000059f, 1.0f-0.000004f,
+    0.335973f, 1.0f-0.335903f,
+    0.336098f, 1.0f-0.000071f,
+    0.667979f, 1.0f-0.335851f,
+    0.335973f, 1.0f-0.335903f,
+    0.336024f, 1.0f-0.671877f,
+    1.000004f, 1.0f-0.671847f,
+    0.999958f, 1.0f-0.336064f,
+    0.667979f, 1.0f-0.335851f,
+    0.668104f, 1.0f-0.000013f,
+    0.335973f, 1.0f-0.335903f,
+    0.667979f, 1.0f-0.335851f,
+    0.335973f, 1.0f-0.335903f,
+    0.668104f, 1.0f-0.000013f,
+    0.336098f, 1.0f-0.000071f,
+    0.000103f, 1.0f-0.336048f,
+    0.000004f, 1.0f-0.671870f,
+    0.336024f, 1.0f-0.671877f,
+    0.000103f, 1.0f-0.336048f,
+    0.336024f, 1.0f-0.671877f,
+    0.335973f, 1.0f-0.335903f,
+    0.667969f, 1.0f-0.671889f,
+    1.000004f, 1.0f-0.671847f,
+    0.667979f, 1.0f-0.335851f
 };
+
+static const GLfloat g_vertex_buffer_data[] = {
+	-1.0f,-1.0f,-1.0f, // triangle 1 : begin
+	-1.0f,-1.0f, 1.0f,
+	-1.0f, 1.0f, 1.0f, // triangle 1 : end
+	1.0f, 1.0f,-1.0f, // triangle 2 : begin
+	-1.0f,-1.0f,-1.0f,
+	-1.0f, 1.0f,-1.0f, // triangle 2 : end
+	1.0f,-1.0f, 1.0f,
+	-1.0f,-1.0f,-1.0f,
+	1.0f,-1.0f,-1.0f,
+	1.0f, 1.0f,-1.0f,
+	1.0f,-1.0f,-1.0f,
+	-1.0f,-1.0f,-1.0f,
+	-1.0f,-1.0f,-1.0f,
+	-1.0f, 1.0f, 1.0f,
+	-1.0f, 1.0f,-1.0f,
+	1.0f,-1.0f, 1.0f,
+	-1.0f,-1.0f, 1.0f,
+	-1.0f,-1.0f,-1.0f,
+	-1.0f, 1.0f, 1.0f,
+	-1.0f,-1.0f, 1.0f,
+	1.0f,-1.0f, 1.0f,
+	1.0f, 1.0f, 1.0f,
+	1.0f,-1.0f,-1.0f,
+	1.0f, 1.0f,-1.0f,
+	1.0f,-1.0f,-1.0f,
+	1.0f, 1.0f, 1.0f,
+	1.0f,-1.0f, 1.0f,
+	1.0f, 1.0f, 1.0f,
+	1.0f, 1.0f,-1.0f,
+	-1.0f, 1.0f,-1.0f,
+	1.0f, 1.0f, 1.0f,
+	-1.0f, 1.0f,-1.0f,
+	-1.0f, 1.0f, 1.0f,
+	1.0f, 1.0f, 1.0f,
+	-1.0f, 1.0f, 1.0f,
+	1.0f,-1.0f, 1.0f
+};
+
+GLuint loadBMP(const char *image_path)
+{
+	unsigned char header[54];
+	unsigned int 	data_pos;
+	unsigned int 	width;
+	unsigned int 	height;
+	unsigned int 	size;
+	unsigned char *data;
+
+	FILE * file = fopen(image_path,"rb");
+	if (!file){printf("Image could not be opened\n"); return 0;}
+	if ( fread(header, 1, 54, file)!=54 ){ // If not 54 bytes read : problem
+    printf("Not a correct BMP file\n");
+    return 0;
+	}
+	if ( header[0]!='B' || header[1]!='M' ){
+	    printf("Not a correct BMP file\n");
+	    return 0;
+	}
+	data_pos    = *(int*)&(header[0x0A]);
+	size 			 = *(int*)&(header[0x22]);
+	width      = *(int*)&(header[0x12]);
+	height     = *(int*)&(header[0x16]);
+	if (size==0)    			size=width*height*3; // 3 : one byte for each Red, Green and Blue component
+	if (data_pos==0)      data_pos=54; // The BMP header is done that way
+	// Create a buffer
+	data = malloc(sizeof(unsigned char)* size);
+	// Read the actual data from the file into the buffer
+	fread(data,1,size,file);
+	//Everything is in memory now, the file can be closed
+	fclose(file);
+	// Create one OpenGL texture
+	GLuint textureID;
+	glGenTextures(1, &textureID);
+	// "Bind" the newly created texture : all future texture functions will modify this texture
+	glBindTexture(GL_TEXTURE_2D, textureID);
+	// Give the image to OpenGL
+	glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, width, height, 0, GL_BGR, GL_UNSIGNED_BYTE, data);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	return 1;
+}
 
 void printf_matrix(float **mat)
 {
@@ -294,23 +411,39 @@ int			main(void)
 	GLFWwindow	*win;
 	GLuint			vertexArrayID;
 	GLuint			vertexBuffer;
+	GLuint		 	colorBuffer;
+	GLuint		 	uvBuffer;
+  GLuint      mixBuffer;
+
+  t_vec3f *vert;
+  t_vec2f *uvs;
+  t_vec3f *norm;
+
 
 	if (!glfwInit()) {
 		fprintf(stderr, "Failed to initialize GLFW!\n");
 		return -1;
 	}
 
+
+  load_obj("assets/objs/suzanne.obj", &vert, &uvs, &norm);
+
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	win = glfwCreateWindow(1024, 768, "Scope", NULL, NULL);
+  printf("test\n");
+
+	win = glfwCreateWindow(1920, 1080, "Scope", NULL, NULL);
+  printf("test\n");
+
 	if (win == NULL) {
 		fprintf(stderr, "Failed to open GLFW Window\n");
 		glfwTerminate();
 		return -1;
 	}
+
 	glfwMakeContextCurrent(win);
 	glewExperimental = 1;
 	if (glewInit() != GLEW_OK) {
@@ -318,6 +451,15 @@ int			main(void)
 		return -1;
 	}
 	glfwSetInputMode(win, GLFW_STICKY_KEYS, GL_TRUE);
+	glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+
+	GLfloat g_color_buffer_data[12*3*3];
+	for (int v = 0; v < 12*3 ; v++){
+	    g_color_buffer_data[3*v+0] = (float) (v*2) / 100.0f;
+	    g_color_buffer_data[3*v+1] = (float) (v+2) / 100.0f;
+	    g_color_buffer_data[3*v+2] = (float) (v) / 100.0f;
+	}
+
 	glGenVertexArrays(1, &vertexArrayID);
 	glBindVertexArray(vertexArrayID);
 	glGenBuffers(1, &vertexBuffer);
@@ -327,16 +469,37 @@ int			main(void)
 		g_vertex_buffer_data,
 		GL_STATIC_DRAW);
 
+	glGenBuffers(1, &colorBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, colorBuffer);
+	glBufferData(GL_ARRAY_BUFFER,
+		sizeof(g_color_buffer_data),
+		g_color_buffer_data,
+		GL_STATIC_DRAW);
+
+  glGenBuffers(1, &uvBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, uvBuffer);
+	glBufferData(GL_ARRAY_BUFFER,
+		sizeof(g_uv_buffer_data),
+		g_uv_buffer_data,
+		GL_STATIC_DRAW);
+
+  glGenBuffers(1, &mixBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, mixBuffer);
+	glBufferData(GL_ARRAY_BUFFER,
+		sizeof(mix_buffer),
+		mix_buffer,
+		GL_STATIC_DRAW);
+
+	loadBMP("assets/images/uvtemplate.bmp");
+
 	t_mat4f projection = perspective(
-		// 0.785f,
 		3.14 / 4.0f,
-		// 4.0f / 3.0f,
-		1024.0f / 768.0f,
+		1920.0f / 1080.0f,
 		0.1f,
 		100.0f);
 
-	projection.m00 = 1.3444;
-	projection.m11 = 1.7925;
+	// projection.m00 = 1.3444;
+	// projection.m11 = 1.7925;
 
 	t_mat4f view = lookAt(
 		c_vec3f(4.0f,3.0f,3.0f),
@@ -345,49 +508,198 @@ int			main(void)
 	);
 	t_mat4f model = init_mat4f(1.0f);
 	t_mat4f mvp = mult_mat4f(mult_mat4f(view, projection), model);
-	// t_mat4f mvp = mult_mat4f(mult_mat4f(projection, view), model);
 
-	float	**projection_c = convert_mat4(projection);
-	float	**view_c = convert_mat4(view);
-	float	**model_c = convert_mat4(model);
 	float	**mvp_converted = convert_mat4(mvp);
-
-	printf_matrix(projection_c);
-	printf("====================\n");
-	printf_matrix(view_c);
-	printf("====================\n");
-	printf_matrix(model_c);
-	printf("====================\n");
-	printf_matrix(mvp_converted);
-	printf("====================\n");
 
 	glClearColor(0.1f, 0.1f, 0.1f, 0.0f);
 	GLuint programId = loadShaders("shaders/vertexShader", "shaders/fragmentShader");
 	GLuint MatrixID = glGetUniformLocation(programId, "MVP");
+	GLuint MixID = glGetUniformLocation(programId, "mixUniform");
 
-	const GLfloat test_mvp[4][4] = {
-		{mvp_converted[0][0], mvp_converted[0][1], mvp_converted[0][2], mvp_converted[0][3]},
-		{mvp_converted[1][0], mvp_converted[1][1], mvp_converted[1][2], mvp_converted[1][3]},
-		{mvp_converted[2][0], mvp_converted[2][1], mvp_converted[2][2], mvp_converted[2][3]},
-		{mvp_converted[3][0], mvp_converted[3][1], mvp_converted[3][2], mvp_converted[3][3]}
-	};
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	glEnable(GL_CULL_FACE);
 
-	// t_mat4f test = init_mat4f(1.0f);
-	// float **test_c = convert_mat4(test);
-	// glGetUniformfv(programId, MatrixID, *test_c);
-	// printf_matrix(test_c);
-	// printf("%f\n", test_c[0][0]);
+	// position
+	t_vec3f position = c_vec3f( 0, 0, 5 );
+	// horizontal angle : toward -Z
+	float horizontalAngle = 3.14f;
+	// vertical angle : 0, look at the horizon
+	float verticalAngle = 0.0f;
+	// Initial Field of View
+	float initialFoV = 45.0f;
+	float speed = 3.0f; // 3 units / second
+	float mouseSpeed = 0.005f;
+	// Get mouse position
+	double lastTime, currentTime;
+	double xpos, ypos;
+	float FoV = initialFoV;
+
+  float opacityMix = 1.0f;
+  int   opacityTrigger = 0;
 
 	while (glfwGetKey(win, GLFW_KEY_ESCAPE) != GLFW_PRESS) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glUseProgram(programId);
-		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, *test_mvp);
+
+
+		currentTime = glfwGetTime();
+		float deltaTime = (float)(currentTime - lastTime);
+		lastTime = currentTime;
+		glfwGetCursorPos(win, &xpos, &ypos);
+		// Reset mouse position for next frame
+		glfwSetCursorPos(win, 1024/2, 768/2);
+		// Compute new orientation
+		horizontalAngle += (mouseSpeed * deltaTime * (float)(1024/2 - xpos )) * 100;
+		verticalAngle   += (mouseSpeed * deltaTime * (float)( 768/2 - ypos )) * 100;
+		t_vec3f direction = c_vec3f(
+		    cos(verticalAngle) * sin(horizontalAngle),
+		    sin(verticalAngle),
+		    cos(verticalAngle) * cos(horizontalAngle)
+		);
+		t_vec3f right = c_vec3f(
+		    sin(horizontalAngle - 3.14f/2.0f),
+		    0,
+		    cos(horizontalAngle - 3.14f/2.0f)
+		);
+		t_vec3f up = ft_cross( right, direction );
+		// Move forward
+		if (glfwGetKey( win, GLFW_KEY_UP ) == GLFW_PRESS){
+			position.x += scal_vec3f(direction, deltaTime * speed).x;
+			position.y += scal_vec3f(direction, deltaTime * speed).y;
+			position.z += scal_vec3f(direction, deltaTime * speed).z;
+		}
+		// Move backward
+		if (glfwGetKey( win, GLFW_KEY_DOWN ) == GLFW_PRESS){
+		    position.x -= scal_vec3f(direction, deltaTime * speed).x;
+		    position.y -= scal_vec3f(direction, deltaTime * speed).y;
+				position.z -= scal_vec3f(direction, deltaTime * speed).z;
+		}
+
+		// Move upward
+		if (glfwGetKey( win, GLFW_KEY_SPACE ) == GLFW_PRESS){
+			position.x += scal_vec3f(up, deltaTime * speed).x;
+			position.y += scal_vec3f(up, deltaTime * speed).y;
+			position.z += scal_vec3f(up, deltaTime * speed).z;
+		}
+		// Move downward
+		if (glfwGetKey( win, GLFW_KEY_LEFT_CONTROL ) == GLFW_PRESS){
+				position.x -= scal_vec3f(up, deltaTime * speed).x;
+				position.y -= scal_vec3f(up, deltaTime * speed).y;
+				position.z -= scal_vec3f(up, deltaTime * speed).z;
+		}
+		// Strafe right
+		if (glfwGetKey( win, GLFW_KEY_RIGHT ) == GLFW_PRESS){
+		    position.x += scal_vec3f(right, deltaTime * speed).x;
+		    position.y += scal_vec3f(right, deltaTime * speed).y;
+		    position.z += scal_vec3f(right, deltaTime * speed).z;
+		}
+		// Strafe left
+		if (glfwGetKey( win, GLFW_KEY_LEFT ) == GLFW_PRESS){
+		    position.x -= scal_vec3f(right, deltaTime * speed).x;
+		    position.y -= scal_vec3f(right, deltaTime * speed).y;
+		    position.z -= scal_vec3f(right, deltaTime * speed).z;
+		}
+
+		if (glfwGetKey( win, GLFW_KEY_Z ) == GLFW_PRESS && FoV >= 0.00){
+			FoV -=  0.05f;
+		}
+    if (glfwGetKey( win, GLFW_KEY_S ) == GLFW_PRESS) {
+			FoV +=  0.05f;
+		}
+
+    printf("opacity: %f, trigger: %d\n", opacityMix, opacityTrigger);
+
+    if (glfwGetKey( win, GLFW_KEY_O ) == GLFW_PRESS) {
+      if (opacityMix == 0.0f || opacityMix == 1.0f)
+      {
+        if (opacityTrigger == 0)
+        {
+          opacityTrigger = 1;
+          opacityMix -= 0.01f;
+        }
+        else
+        {
+          opacityTrigger = 0;
+          opacityMix += 0.01f;
+        }
+      }
+    }
+
+    if (opacityMix < 0.0f)
+      opacityMix = 0.0f;
+    if (opacityMix > 1.0f)
+      opacityMix = 1.0f;
+
+
+    if (opacityMix > 0.0f && opacityMix < 1.0f)
+    {
+      if (opacityTrigger == 0)
+        opacityMix += 0.01f;
+      else
+        opacityMix -= 0.01f;
+    }
+
+		projection = perspective(
+			FoV * (3.14f / 180.0f),
+			1920.0f / 1080.0f,
+			0.1f,
+			100.0f);
+		// projection.m00 = 1.3444;
+		// projection.m11 = 1.7925;
+		// view = lookAt(
+		// 	c_vec3f(4.0f,3.0f,3.0f),
+		// 	c_vec3f(0.0f,0.0f,0.0f),
+		// 	c_vec3f(0.0f,1.0f,0.0f)
+		// );
+		if (glfwGetKey( win, GLFW_KEY_R ) == GLFW_PRESS) {
+			position.x = 4.0f;
+			position.y = 4.0f;
+			position.z = -4.0f;
+			horizontalAngle = -0.78f;
+			verticalAngle = -0.62f;
+			FoV = 45.0f;
+		}
+		view = lookAt(
+			position,
+			a_vec3f(position, direction),
+			up
+		);
+		model = init_mat4f(1.0f);
+		mvp = mult_mat4f(mult_mat4f(view, projection), model);
+		mvp_converted = convert_mat4(mvp);
+		GLfloat final_mvp[4][4] = {
+			{mvp_converted[0][0], mvp_converted[0][1], mvp_converted[0][2], mvp_converted[0][3]},
+			{mvp_converted[1][0], mvp_converted[1][1], mvp_converted[1][2], mvp_converted[1][3]},
+			{mvp_converted[2][0], mvp_converted[2][1], mvp_converted[2][2], mvp_converted[2][3]},
+			{mvp_converted[3][0], mvp_converted[3][1], mvp_converted[3][2], mvp_converted[3][3]}
+		};
+		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, *final_mvp);
+		glUniform1f(MixID, opacityMix);
+
 
 		glEnableVertexAttribArray(0);
 		glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void *) 0);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+
+		glEnableVertexAttribArray(1);
+		glBindBuffer(GL_ARRAY_BUFFER, colorBuffer);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void *) 0);
+
+    glEnableVertexAttribArray(2);
+		glBindBuffer(GL_ARRAY_BUFFER, uvBuffer);
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (void *) 0);
+
+    glEnableVertexAttribArray(3);
+		glBindBuffer(GL_ARRAY_BUFFER, mixBuffer);
+		glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 0, (void *) 0);
+
+		glDrawArrays(GL_TRIANGLES, 0, 12 * 3);
+
 		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+		glDisableVertexAttribArray(2);
+		glDisableVertexAttribArray(3);
 
 		glfwSwapBuffers(win);
 		glfwPollEvents();
