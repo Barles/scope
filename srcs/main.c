@@ -321,6 +321,52 @@ t_mat4f lookAt
 	return res;
 }
 
+t_mat4f translate(t_mat4f m, t_vec3f v)
+{
+
+  m.m03 = m.m03 * v.x;
+  m.m13 = m.m13 * v.y;
+  m.m23 = m.m23 * v.z;
+  m.m33 = m.m33;
+
+	// Result[3] = m[0] * v[0] + m[1] * v[1] + m[2] * v[2] + m[3];
+
+  return m;
+}
+
+t_mat4f rotate(t_mat4f m, float angle, t_vec3f v)
+{
+  const float a = angle;
+  const float c = cos(a);
+  const float s = sin(a);
+  t_mat4f Result;
+
+  t_vec3f axis = ft_normalize(v);
+
+  Result.m00 = c + (1 - c) * axis.x * axis.x;
+  Result.m01 = (1 - c) * axis.x * axis.y + s * axis.z;
+  Result.m02 = (1 - c) * axis.x * axis.z - s * axis.y;
+  Result.m03 = 0;
+
+  Result.m10 = (1 - c) * axis.y * axis.x - s * axis.z;
+  Result.m11 = c + (1 - c) * axis.y * axis.y;
+  Result.m12 = (1 - c) * axis.y * axis.z + s * axis.x;
+  Result.m13 = 0;
+
+  Result.m20 = (1 - c) * axis.z * axis.x + s * axis.y;
+  Result.m21 = (1 - c) * axis.z * axis.y - s * axis.x;
+  Result.m22 = c + (1 - c) * axis.z * axis.z;
+  Result.m23 = 0;
+
+  Result.m30 = 0;
+  Result.m31 = 0;
+  Result.m32 = 0;
+  Result.m33 = 1;
+
+  return mult_mat4f(Result, m);
+  // return mult_mat4f(m, Result);
+}
+
 GLuint	loadShaders(const char *vertexFile, const char *fragmentFile)
 {
 	GLuint	vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
@@ -507,7 +553,10 @@ int			main(void)
 		c_vec3f(0.0f,1.0f,0.0f)
 	);
 	t_mat4f model = init_mat4f(1.0f);
+
+
 	t_mat4f mvp = mult_mat4f(mult_mat4f(view, projection), model);
+  mvp = rotate(mvp, 45.0f * (3.14f / 180.0f), c_vec3f(0,1,0));
 
 	float	**mvp_converted = convert_mat4(mvp);
 
@@ -537,6 +586,8 @@ int			main(void)
 
   float opacityMix = 1.0f;
   int   opacityTrigger = 0;
+  t_vec3f obj_rotate = c_vec3f(0.0f, 0.0f, 0.0f);
+  t_vec3f obj_translate = c_vec3f(0.0f, 0.0f, 0.0f);
 
 	while (glfwGetKey(win, GLFW_KEY_ESCAPE) != GLFW_PRESS) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -601,16 +652,47 @@ int			main(void)
 		    position.z -= scal_vec3f(right, deltaTime * speed).z;
 		}
 
-		if (glfwGetKey( win, GLFW_KEY_Z ) == GLFW_PRESS && FoV >= 0.00){
+		if (glfwGetKey( win, GLFW_KEY_Q ) == GLFW_PRESS && FoV >= 0.00){
 			FoV -=  0.05f;
 		}
-    if (glfwGetKey( win, GLFW_KEY_S ) == GLFW_PRESS) {
+    if (glfwGetKey( win, GLFW_KEY_E ) == GLFW_PRESS) {
 			FoV +=  0.05f;
 		}
 
-    printf("opacity: %f, trigger: %d\n", opacityMix, opacityTrigger);
+    if (glfwGetKey( win, GLFW_KEY_W ) == GLFW_PRESS){
+			obj_translate.x += 0.1f;
+		}
+    if (glfwGetKey( win, GLFW_KEY_S ) == GLFW_PRESS){
+			obj_translate.x -= 0.1f;
+		}
+    if (glfwGetKey( win, GLFW_KEY_A ) == GLFW_PRESS){
+			obj_translate.y += 0.1f;
+		}
+    if (glfwGetKey( win, GLFW_KEY_D ) == GLFW_PRESS){
+			obj_translate.y -= 0.1f;
+		}
 
-    if (glfwGetKey( win, GLFW_KEY_O ) == GLFW_PRESS) {
+
+    if (glfwGetKey( win, GLFW_KEY_O ) == GLFW_PRESS){
+			obj_rotate.x += 0.1f;
+		}
+    if (glfwGetKey( win, GLFW_KEY_K ) == GLFW_PRESS){
+			obj_rotate.y -= 0.1f;
+		}
+    if (glfwGetKey( win, GLFW_KEY_L ) == GLFW_PRESS){
+      obj_rotate.x -= 0.1f;
+		}
+    if (glfwGetKey( win, GLFW_KEY_SEMICOLON ) == GLFW_PRESS){
+      obj_rotate.y += 0.1f;
+		}
+    if (glfwGetKey( win, GLFW_KEY_I ) == GLFW_PRESS){
+      obj_rotate.z -= 0.1f;
+		}
+    if (glfwGetKey( win, GLFW_KEY_P ) == GLFW_PRESS){
+      obj_rotate.z += 0.1f;
+		}
+
+    if (glfwGetKey( win, GLFW_KEY_T ) == GLFW_PRESS) {
       if (opacityMix == 0.0f || opacityMix == 1.0f)
       {
         if (opacityTrigger == 0)
@@ -665,8 +747,14 @@ int			main(void)
 			a_vec3f(position, direction),
 			up
 		);
+    printf("Translation: x %f, y %f, z %f\n", obj_translate.x, obj_translate.y, obj_translate.z);
+    view = translate(view, obj_translate);
+    view = rotate(view, obj_rotate.x * (3.14f / 180.0f), c_vec3f(1,0,0));
+    view = rotate(view, obj_rotate.y * (3.14f / 180.0f), c_vec3f(0,1,0));
+    view = rotate(view, obj_rotate.z * (3.14f / 180.0f), c_vec3f(0,0,1));
 		model = init_mat4f(1.0f);
 		mvp = mult_mat4f(mult_mat4f(view, projection), model);
+
 		mvp_converted = convert_mat4(mvp);
 		GLfloat final_mvp[4][4] = {
 			{mvp_converted[0][0], mvp_converted[0][1], mvp_converted[0][2], mvp_converted[0][3]},
